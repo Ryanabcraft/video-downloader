@@ -72,97 +72,45 @@
       margin: 12px auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .splash { text-align: center; padding: 20px; }
-    .splash .icon { font-size: 48px; margin-bottom: 12px; }
-    .splash p { color: #a0a0b8; font-size: 14px; margin-bottom: 4px; }
-    .splash small { color: #6b6b80; font-size: 12px; }
-    .progress-bar {
-      width: 200px; height: 4px;
-      background: rgba(255,255,255,.1);
-      border-radius: 2px;
-      margin: 16px auto 0;
-      overflow: hidden;
-    }
-    .progress-bar span {
-      display: block;
-      height: 100%;
-      background: linear-gradient(90deg,#f7971e,#ffd200);
-      border-radius: 2px;
-      transition: width 1s;
-    }
+    .retrying { text-align: center; padding: 16px; }
+    .retrying p { color: #f7971e; font-size: 14px; }
+    .retrying small { color: #6b6b80; font-size: 12px; }
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div id="splashScreen">
-      <div class="card">
-        <div class="splash">
-          <div class="icon">🎬</div>
-          <h1><span>Video Downloader</span></h1>
-          <p>Servidor iniciando...</p>
-          <small>Aguarde enquanto o servidor acorda</small>
-          <div class="progress-bar"><span id="progressBar" style="width:0%"></span></div>
+    <h1>🎬 <span>Video Downloader</span></h1>
+    <div class="card">
+      <div class="input-group">
+        <input type="url" id="urlInput" placeholder="Cole o link do vídeo..." autocomplete="off">
+        <button id="btn">Baixar</button>
+      </div>
+      <div id="result"></div>
+      <div id="retrying" class="hidden">
+        <div class="retrying">
+          <div class="spinner"></div>
+          <p>Erro ao baixar. Tentando novamente...</p>
+          <small id="retryCount">Tentativa 1 de 5</small>
         </div>
       </div>
     </div>
-    <div id="mainApp" class="hidden">
-      <h1>🎬 <span>Video Downloader</span></h1>
-      <div class="card">
-        <div class="input-group">
-          <input type="url" id="urlInput" placeholder="Cole o link do vídeo..." autocomplete="off">
-          <button id="btn">Baixar</button>
-        </div>
-        <div id="result"></div>
-      </div>
-      <div class="footer">TikTok · Shopee · Pinterest · ML Clips · RedNote · Facebook · Reels</div>
-    </div>
+    <div class="footer">TikTok · Shopee · Pinterest · ML Clips · RedNote · Facebook · Reels</div>
   </div>
   <script>
-    const splashScreen = document.getElementById('splashScreen');
-    const mainApp = document.getElementById('mainApp');
-    const progressBar = document.getElementById('progressBar');
     const input = document.getElementById('urlInput');
     const btn = document.getElementById('btn');
     const result = document.getElementById('result');
+    const retrying = document.getElementById('retrying');
+    const retryCount = document.getElementById('retryCount');
 
-    async function waitServer() {
-      let attempts = 0;
-      const maxAttempts = 20;
+    async function tryDownload(url, attempt = 1) {
+      const maxAttempts = 5;
 
-      while (attempts < maxAttempts) {
-        const pct = Math.min((attempts / maxAttempts) * 100, 90);
-        progressBar.style.width = pct + '%';
-
-        try {
-          const res = await fetch('/api/health', { signal: AbortSignal.timeout(5000) });
-          if (res.ok) {
-            progressBar.style.width = '100%';
-            await new Promise(r => setTimeout(r, 400));
-            splashScreen.classList.add('hidden');
-            mainApp.classList.remove('hidden');
-            return;
-          }
-        } catch (e) {}
-
-        attempts++;
-        await new Promise(r => setTimeout(r, 1000));
-      }
-
-      progressBar.style.width = '100%';
-      document.querySelector('.splash p').textContent = 'Servidor indisponível';
-      document.querySelector('.splash small').textContent = 'Tente novamente mais tarde';
-    }
-
-    waitServer();
-
-    btn.onclick = async () => {
-      const url = input.value.trim();
-      if (!url) return;
-
-      btn.disabled = true;
-      btn.textContent = 'Baixando...';
-      result.innerHTML = '<div class="spinner"></div>';
+      result.innerHTML = '';
+      result.classList.add('hidden');
+      retrying.classList.remove('hidden');
+      retryCount.textContent = `Tentativa ${attempt} de ${maxAttempts}`;
 
       try {
         const res = await fetch('/download', {
@@ -173,8 +121,13 @@
         });
         const data = await res.json();
 
+        retrying.classList.add('hidden');
+        result.classList.remove('hidden');
+
         if (!res.ok) {
           result.innerHTML = `<p class="error">${data.error}</p>`;
+          btn.disabled = false;
+          btn.textContent = 'Baixar';
           return;
         }
 
@@ -183,12 +136,28 @@
           <p class="success">Download concluído! (${mb}MB)</p>
           <a href="${data.file}" download>⬇️ Baixar Vídeo</a>
         `;
+        btn.disabled = false;
+        btn.textContent = 'Baixar';
       } catch (e) {
-        result.innerHTML = '<p class="error">Erro de conexão. O servidor pode estar iniciando, tente novamente.</p>';
-      } finally {
+        if (attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, 3000));
+          return tryDownload(url, attempt + 1);
+        }
+        retrying.classList.add('hidden');
+        result.classList.remove('hidden');
+        result.innerHTML = '<p class="error">Servidor indisponível. Tente novamente.</p>';
         btn.disabled = false;
         btn.textContent = 'Baixar';
       }
+    }
+
+    btn.onclick = () => {
+      const url = input.value.trim();
+      if (!url) return;
+
+      btn.disabled = true;
+      btn.textContent = '...';
+      tryDownload(url);
     };
 
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') btn.click(); });
