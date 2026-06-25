@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: video-downloader
+    runtime: node
+    repo: https://github.com/Ryanabcraft/video-downloader
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/index.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_VERSION
+        value: 20
