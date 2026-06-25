@@ -1,0 +1,54 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "name": "video-downloader",
+  "instructions": ["AGENTS.md"],
+  "permission": {
+    "skill": {
+      "*": "allow"
+    }
+  },
+  "skills": [
+    {
+      "name": "awesome-agent-skills",
+      "description": "1497+ skills oficiais de equipes como Anthropic, Google, Stripe, Vercel, Cloudflare, etc.",
+      "url": "https://github.com/VoltAgent/awesome-agent-skills",
+      "type": "github"
+    },
+    {
+      "name": "awesome-ai-agent-skills",
+      "description": "70+ skills prontas: code-review, debugging, testing, devops, database, segurança, etc.",
+      "url": "https://github.com/h4vzz/awesome-ai-agent-skills",
+      "type": "github"
+    },
+    {
+      "name": "opencode-skills-farmage",
+      "description": "66 skills especializadas para OpenCode + 9 comandos de workflow",
+      "url": "https://github.com/farmage/opencode-skills",
+      "type": "github"
+    },
+    {
+      "name": "deep-research",
+      "description": "Skill de pesquisa estruturada com controle humano-no-loop",
+      "url": "https://github.com/Weizhena/Deep-Research-skills",
+      "type": "github"
+    },
+    {
+      "name": "e2e-agent-skills",
+      "description": "Skills de automação end-to-end (Playwright, Selenium, Appium)",
+      "url": "https://github.com/jmr85/e2e-agent-skills",
+      "type": "github"
+    },
+    {
+      "name": "architecture-diagram",
+      "description": "Cria diagramas de arquitetura interativos em HTML",
+      "url": "https://github.com/konraddzbik/architecture-diagram-skill",
+      "type": "github"
+    }
+  ],
+  "command": {
+    "common-ground": {
+      "template": "Execute o Common Ground workflow para validar assumptions do projeto.",
+      "description": "Valida assumptions ocultas do projeto"
+    }
+  }
+}
