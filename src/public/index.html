@@ -72,24 +72,89 @@
       margin: 12px auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .splash { text-align: center; padding: 20px; }
+    .splash .icon { font-size: 48px; margin-bottom: 12px; }
+    .splash p { color: #a0a0b8; font-size: 14px; margin-bottom: 4px; }
+    .splash small { color: #6b6b80; font-size: 12px; }
+    .progress-bar {
+      width: 200px; height: 4px;
+      background: rgba(255,255,255,.1);
+      border-radius: 2px;
+      margin: 16px auto 0;
+      overflow: hidden;
+    }
+    .progress-bar span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg,#f7971e,#ffd200);
+      border-radius: 2px;
+      transition: width 1s;
+    }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🎬 <span>Video Downloader</span></h1>
-    <div class="card">
-      <div class="input-group">
-        <input type="url" id="urlInput" placeholder="Cole o link do vídeo..." autocomplete="off">
-        <button id="btn">Baixar</button>
+    <div id="splashScreen">
+      <div class="card">
+        <div class="splash">
+          <div class="icon">🎬</div>
+          <h1><span>Video Downloader</span></h1>
+          <p>Servidor iniciando...</p>
+          <small>Aguarde enquanto o servidor acorda</small>
+          <div class="progress-bar"><span id="progressBar" style="width:0%"></span></div>
+        </div>
       </div>
-      <div id="result"></div>
     </div>
-    <div class="footer">TikTok · Shopee · Pinterest · ML Clips · RedNote · Facebook · Reels</div>
+    <div id="mainApp" class="hidden">
+      <h1>🎬 <span>Video Downloader</span></h1>
+      <div class="card">
+        <div class="input-group">
+          <input type="url" id="urlInput" placeholder="Cole o link do vídeo..." autocomplete="off">
+          <button id="btn">Baixar</button>
+        </div>
+        <div id="result"></div>
+      </div>
+      <div class="footer">TikTok · Shopee · Pinterest · ML Clips · RedNote · Facebook · Reels</div>
+    </div>
   </div>
   <script>
+    const splashScreen = document.getElementById('splashScreen');
+    const mainApp = document.getElementById('mainApp');
+    const progressBar = document.getElementById('progressBar');
     const input = document.getElementById('urlInput');
     const btn = document.getElementById('btn');
     const result = document.getElementById('result');
+
+    async function waitServer() {
+      let attempts = 0;
+      const maxAttempts = 20;
+
+      while (attempts < maxAttempts) {
+        const pct = Math.min((attempts / maxAttempts) * 100, 90);
+        progressBar.style.width = pct + '%';
+
+        try {
+          const res = await fetch('/api/health', { signal: AbortSignal.timeout(5000) });
+          if (res.ok) {
+            progressBar.style.width = '100%';
+            await new Promise(r => setTimeout(r, 400));
+            splashScreen.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            return;
+          }
+        } catch (e) {}
+
+        attempts++;
+        await new Promise(r => setTimeout(r, 1000));
+      }
+
+      progressBar.style.width = '100%';
+      document.querySelector('.splash p').textContent = 'Servidor indisponível';
+      document.querySelector('.splash small').textContent = 'Tente novamente mais tarde';
+    }
+
+    waitServer();
 
     btn.onclick = async () => {
       const url = input.value.trim();
@@ -104,6 +169,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url }),
+          signal: AbortSignal.timeout(60000),
         });
         const data = await res.json();
 
@@ -118,7 +184,7 @@
           <a href="${data.file}" download>⬇️ Baixar Vídeo</a>
         `;
       } catch (e) {
-        result.innerHTML = '<p class="error">Erro de conexão</p>';
+        result.innerHTML = '<p class="error">Erro de conexão. O servidor pode estar iniciando, tente novamente.</p>';
       } finally {
         btn.disabled = false;
         btn.textContent = 'Baixar';
